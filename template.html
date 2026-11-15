@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meu feed</title>
+<meta name="robots" content="noindex">
+<style>
+  :root{--bg:#fff;--fg:#111;--muted:#666;--card:#f6f6f6;--line:#e3e3e3;--accent:#c4302b;--chip:#eee;--chipon:#111;--chipfg:#fff}
+  @media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#121212;--fg:#eee;--muted:#999;--card:#1c1c1c;--line:#2a2a2a;--chip:#2a2a2a;--chipon:#eee;--chipfg:#111}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  header{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);padding:12px 16px;z-index:1}
+  h1{font-size:18px;margin:0 0 8px}
+  .bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .chip{border:0;border-radius:999px;padding:5px 11px;background:var(--chip);color:var(--fg);font-size:13px;cursor:pointer}
+  .chip.on{background:var(--chipon);color:var(--chipfg)}
+  .spacer{flex:1}
+  .meta{color:var(--muted);font-size:12px;margin-top:6px}
+  main{max-width:1100px;margin:0 auto;padding:16px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+  .card{background:var(--card);border-radius:10px;overflow:hidden;display:flex;flex-direction:column;position:relative}
+  .card.seen{opacity:.45}
+  .card img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:#000}
+  .body{padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px;flex:1}
+  .title{font-weight:600;font-size:15px;text-decoration:none;color:var(--fg)}
+  .title:hover{text-decoration:underline}
+  .sub{color:var(--muted);font-size:13px}
+  .new{position:absolute;top:8px;left:8px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px}
+  .actions{margin-top:auto;padding-top:6px;display:flex;gap:10px}
+  .actions button{border:0;background:none;color:var(--muted);font-size:12px;cursor:pointer;padding:0}
+  .actions button:hover{color:var(--fg)}
+  .empty{color:var(--muted);text-align:center;padding:48px 0}
+  .day{grid-column:1/-1;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:8px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Meu feed <span id="count" class="sub"></span></h1>
+  <div class="bar" id="channels"></div>
+  <div class="bar" style="margin-top:6px">
+    <button class="chip on" data-range="14">Últimas 2 semanas</button>
+    <button class="chip" data-range="60">2 meses</button>
+    <button class="chip" data-range="0">Tudo</button>
+    <span class="spacer"></span>
+    <button class="chip" id="toggleSeen">Ocultar vistos</button>
+    <button class="chip" id="markAll">Marcar tudo como visto</button>
+  </div>
+  <div class="meta" id="meta"></div>
+</header>
+<main><div class="grid" id="grid"></div></main>
+
+<script id="feed" type="application/json">__FEED_JSON__</script>
+<script>
+(function(){
+  const feed = JSON.parse(document.getElementById('feed').textContent);
+  const LS = { seen:'yf.seen', last:'yf.lastVisit', hide:'yf.hideSeen', ch:'yf.channels' };
+  const get = (k, d) => { try { const v = localStorage.getItem(k); return v==null ? d : JSON.parse(v); } catch(e){ return d; } };
+  const set = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} };
+
+  let seen = new Set(get(LS.seen, []));
+  const lastVisit = get(LS.last, 0);
+  let hideSeen = get(LS.hide, false);
+  let active = new Set(get(LS.ch, feed.channels.map(c => c.channel_id)));
+  let rangeDays = 14;
+  const now = Date.now();
+  // Visita atual passa a ser "última visita" quando a página fecha.
+  addEventListener('pagehide', () => set(LS.last, now));
+
+  const fmtDate = iso => new Date(iso).toLocaleDateString('pt-BR', {weekday:'short', day:'2-digit', month:'short'});
+  const ago = iso => { const h = Math.round((now - new Date(iso)) / 36e5);
+    return h < 1 ? 'agora' : h < 24 ? `${h} h` : `${Math.round(h/24)} d`; };
+  const views = n => n==null ? '' : ' · ' + (n>=1e6 ? (n/1e6).toFixed(1)+'M' : n>=1e3 ? Math.round(n/1e3)+'k' : n) + ' views';
+
+  // Chips de canal
+  const chBar = document.getElementById('channels');
+  feed.channels.forEach(c => {
+    const b = document.createElement('button'); b.className = 'chip'; b.textContent = c.name;
+    b.classList.toggle('on', active.has(c.channel_id));
+    b.onclick = () => { active.has(c.channel_id) ? active.delete(c.channel_id) : active.add(c.channel_id);
+      b.classList.toggle('on'); set(LS.ch, [...active]); render(); };
+    chBar.appendChild(b);
+  });
+  document.querySelectorAll('[data-range]').forEach(b => b.onclick = () => {
+    document.querySelectorAll('[data-range]').forEach(x => x.classList.remove('on'));
+    b.classList.add('on'); rangeDays = +b.dataset.range; render();
+  });
+  const tog = document.getElementById('toggleSeen');
+  const syncTog = () => { tog.classList.toggle('on', hideSeen); tog.textContent = hideSeen ? 'Mostrando só não vistos' : 'Ocultar vistos'; };
+  tog.onclick = () => { hideSeen = !hideSeen; set(LS.hide, hideSeen); syncTog(); render(); };
+  document.getElementById('markAll').onclick = () => { visible().forEach(v => seen.add(v.id)); set(LS.seen, [...seen]); render(); };
+
+  function visible(){
+    return feed.videos.filter(v => active.has(v.channel_id)
+      && (!rangeDays || now - new Date(v.published) < rangeDays*864e5)
+      && (!hideSeen || !seen.has(v.id)));
+  }
+
+  function render(){
+    syncTog();
+    const vids = visible();
+    const grid = document.getElementById('grid'); grid.innerHTML = '';
+    document.getElementById('count').textContent = `(${vids.length})`;
+    const gen = new Date(feed.generated_at).toLocaleString('pt-BR');
+    document.getElementById('meta').textContent = `Atualizado ${gen}` + (feed.errors.length ? ` · falhas: ${feed.errors.join('; ')}` : '');
+    if (!vids.length) { grid.innerHTML = '<div class="empty">Nada novo por aqui.</div>'; return; }
+    let day = '';
+    vids.forEach(v => {
+      const d = fmtDate(v.published);
+      if (d !== day) { day = d; const h = document.createElement('div'); h.className = 'day'; h.textContent = d; grid.appendChild(h); }
+      const isNew = lastVisit && new Date(v.published) > lastVisit && !seen.has(v.id);
+      const card = document.createElement('article');
+      card.className = 'card' + (seen.has(v.id) ? ' seen' : '');
+      card.innerHTML = `
+        ${isNew ? '<span class="new">NOVO</span>' : ''}
+        <a href="${v.url}" target="_blank" rel="noopener"><img loading="lazy" src="${v.thumb}" alt=""></a>
+        <div class="body">
+          <a class="title" href="${v.url}" target="_blank" rel="noopener"></a>
+          <div class="sub">${v.channel} · ${ago(v.published)}${views(v.views)}</div>
+          <div class="actions"><button data-act="seen">${seen.has(v.id) ? 'Desmarcar visto' : 'Marcar como visto'}</button></div>
+        </div>`;
+      card.querySelector('.title').textContent = v.title;
+      card.querySelector('[data-act=seen]').onclick = () => { seen.has(v.id) ? seen.delete(v.id) : seen.add(v.id); set(LS.seen, [...seen]); render(); };
+      card.querySelectorAll('a').forEach(a => a.addEventListener('click', () => { seen.add(v.id); set(LS.seen, [...seen]); setTimeout(render, 300); }));
+      grid.appendChild(card);
+    });
+  }
+  render();
+})();
+</script>
+</body>
+</html>
