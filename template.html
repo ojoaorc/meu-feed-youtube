@@ -88,28 +88,6 @@
   .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
   .btn.danger{color:var(--accent2)}
 
-  /* painel de canais */
-  .drawer{position:fixed;top:0;right:0;bottom:0;width:min(440px,100%);background:var(--bg2);border-left:1px solid var(--line);z-index:30;transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column;box-shadow:var(--shadow)}
-  .drawer.open{transform:none}
-  .drawer header{position:static;background:none;backdrop-filter:none;display:flex;align-items:center;gap:10px;padding:16px 18px}
-  .drawer header h2{margin:0;font-size:17px;flex:1}
-  .drawer .content{padding:0 18px 24px;overflow:auto;display:flex;flex-direction:column;gap:18px}
-  .field{display:flex;gap:8px}
-  .field input{flex:1;min-width:0;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:10px;padding:9px 12px;font-size:14px;outline:0}
-  .field input:focus{border-color:var(--accent)}
-  .hint{color:var(--muted);font-size:12.5px;line-height:1.5}
-  .hint a{color:var(--accent2)}
-  .chl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
-  .chl li{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
-  .chl img{width:34px;height:34px;border-radius:50%;object-fit:cover;background:var(--line)}
-  .chl .nm{flex:1;min-width:0}
-  .chl .nm b{display:block;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .chl .nm span{color:var(--muted);font-size:12px}
-  .chl li.pending{border-style:dashed;opacity:.8}
-  .status{font-size:13px;padding:10px 12px;border-radius:10px;background:var(--card);border:1px solid var(--line)}
-  .status.ok{border-color:#2f9e44;color:#8ce99a}
-  .status.err{border-color:var(--accent);color:var(--accent2)}
-  details summary{cursor:pointer;font-weight:600;font-size:13px;color:var(--muted)}
   .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:999px;font-weight:600;font-size:13px;z-index:40;box-shadow:var(--shadow);opacity:0;transition:opacity .2s;pointer-events:none}
   .toast.show{opacity:1}
   @media (max-width:640px){.logo span{display:none}.search kbd{display:none}.grid{gap:16px 12px}main{padding:12px 12px 80px}.wrap{padding:0 12px}}
@@ -127,9 +105,6 @@
       </label>
       <button class="icon" id="theme" title="Tema claro/escuro" aria-label="Tema">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
-      </button>
-      <button class="icon" id="manage" title="Gerenciar canais" aria-label="Gerenciar canais">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/><circle cx="19" cy="18" r="2.5"/></svg>
       </button>
     </div>
     <div class="row" id="channels"></div>
@@ -158,25 +133,6 @@
   </div>
 </div>
 
-<aside class="drawer" id="drawer" aria-label="Gerenciar canais">
-  <header><h2>Canais</h2><button class="icon" id="dclose" aria-label="Fechar">✕</button></header>
-  <div class="content">
-    <div>
-      <div class="field">
-        <input id="addInput" placeholder="@handle, link do canal ou UC…">
-        <button class="btn primary" id="addBtn">Adicionar</button>
-      </div>
-      <p class="hint">Cole o <b>@handle</b> (ex.: <code>@garyseconomics</code>), o link do canal ou o ID que começa com UC. A lista é salva no repositório e a página é republicada em cerca de um minuto.</p>
-    </div>
-    <div id="status" class="status" hidden></div>
-    <ul class="chl" id="chl"></ul>
-    <details id="tokenBox">
-      <summary>Token do GitHub</summary>
-      <p class="hint">Para adicionar ou remover canais daqui, a página precisa de um token do GitHub com permissão de escrita em <code id="repoName"></code>. Crie em <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Settings › Developer settings › Fine-grained tokens</a>: só este repositório, permissão <b>Contents: Read and write</b>. Ele fica salvo apenas neste navegador.</p>
-      <div class="field"><input id="token" type="password" placeholder="github_pat_…" autocomplete="off"><button class="btn" id="saveToken">Salvar</button></div>
-    </details>
-  </div>
-</aside>
 <div class="toast" id="toast"></div>
 
 <script id="feed" type="application/json">__FEED_JSON__</script>
@@ -184,7 +140,7 @@
 (function(){
   const feed = JSON.parse(document.getElementById('feed').textContent);
   const $ = s => document.querySelector(s);
-  const LS = { seen:'yf.seen', last:'yf.lastVisit', hide:'yf.hideSeen', ch:'yf.channels', theme:'yf.theme', token:'yf.ghToken', pendingSince:'yf.pendingSince' };
+  const LS = { seen:'yf.seen', last:'yf.lastVisit', hide:'yf.hideSeen', ch:'yf.channels', theme:'yf.theme', };
   const get = (k, d) => { try { const v = localStorage.getItem(k); return v==null ? d : JSON.parse(v); } catch(e){ return d; } };
   const set = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} };
   const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -247,7 +203,7 @@
   q.oninput = () => { query = norm(q.value.trim()); render(); };
   addEventListener('keydown', e => {
     if (e.key === '/' && document.activeElement !== q && !$('#modal').classList.contains('open')) { e.preventDefault(); q.focus(); }
-    if (e.key === 'Escape') { if ($('#modal').classList.contains('open')) closePlayer(); else if ($('#drawer').classList.contains('open')) $('#drawer').classList.remove('open'); else if (document.activeElement === q) { q.value=''; query=''; q.blur(); render(); } }
+    if (e.key === 'Escape') { if ($('#modal').classList.contains('open')) closePlayer(); else if (document.activeElement === q) { q.value=''; query=''; q.blur(); render(); } }
   });
 
   function visible(){
@@ -307,88 +263,6 @@
   function closePlayer(){ modal.classList.remove('open'); frame.src = 'about:blank'; document.body.style.overflow = ''; }
   $('#pclose').onclick = closePlayer;
   modal.onclick = e => { if (e.target === modal) closePlayer(); };
-
-  // ---- gerenciar canais (edita channels.json no GitHub via API de conteúdo)
-  const drawer = $('#drawer');
-  $('#manage').onclick = () => { drawer.classList.add('open'); renderList(); };
-  $('#dclose').onclick = () => drawer.classList.remove('open');
-  $('#repoName').textContent = feed.repo;
-  const tokenInput = $('#token');
-  tokenInput.value = get(LS.token, '') ? '••••••••••••' : '';
-  $('#saveToken').onclick = () => { const t = tokenInput.value.trim(); if (!t || t.startsWith('•')) return;
-    set(LS.token, t); tokenInput.value = '••••••••••••'; $('#tokenBox').open = false; toast('Token salvo neste navegador'); };
-  const hasToken = () => !!get(LS.token, '');
-
-  function parseChannel(s){
-    s = s.trim();
-    let m;
-    if ((m = s.match(/(UC[\w-]{20,})/))) return {channel_id: m[1]};
-    if ((m = s.match(/@([\w.-]+)/))) return {handle: m[1]};
-    if (/^[\w.-]+$/.test(s)) return {handle: s};
-    return null;
-  }
-  function status(msg, cls){ const el = $('#status'); el.hidden = !msg; el.textContent = msg || ''; el.className = 'status ' + (cls||''); }
-
-  async function gh(path, opts={}){
-    const r = await fetch(`https://api.github.com/repos/${feed.repo}/${path}`, {...opts,
-      headers: {Authorization: `Bearer ${get(LS.token,'')}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', ...(opts.headers||{})}});
-    if (!r.ok) { const t = await r.text(); throw new Error(`${r.status} ${t.slice(0,160)}`); }
-    return r.json();
-  }
-  const b64 = { enc: s => btoa(String.fromCharCode(...new TextEncoder().encode(s))),
-                dec: s => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\n/g,'')), c => c.charCodeAt(0))) };
-
-  async function updateChannels(mutate, msg){
-    if (!hasToken()) { $('#tokenBox').open = true; tokenInput.focus(); status('Salve um token do GitHub primeiro.', 'err'); return; }
-    status('Salvando no repositório…');
-    try {
-      const file = await gh('contents/channels.json?ref=main');
-      const list = JSON.parse(b64.dec(file.content));
-      const next = mutate(list);
-      if (!next) return;
-      await gh('contents/channels.json', {method:'PUT', body: JSON.stringify({message: msg, sha: file.sha, branch: 'main', content: b64.enc(JSON.stringify(next, null, 2) + '\n')})});
-      set(LS.pendingSince, feed.generated_at);
-      status('Salvo. O GitHub está republicando a página (≈1 min); recarrego sozinho quando ficar pronta.', 'ok');
-      renderList(next);
-      waitForRebuild();
-    } catch (e) { status('Erro: ' + e.message, 'err'); }
-  }
-  $('#addBtn').onclick = () => {
-    const p = parseChannel($('#addInput').value);
-    if (!p) { status('Não entendi. Cole um @handle, um link de canal ou um ID UC….', 'err'); return; }
-    updateChannels(list => {
-      if (list.some(c => (p.channel_id && c.channel_id === p.channel_id) || (p.handle && (c.handle||'').toLowerCase() === p.handle.toLowerCase()))) { status('Esse canal já está na lista.', 'err'); return null; }
-      return [...list, p];
-    }, `Adiciona canal ${p.handle ? '@'+p.handle : p.channel_id}`);
-    $('#addInput').value = '';
-  };
-  $('#addInput').onkeydown = e => { if (e.key === 'Enter') $('#addBtn').onclick(); };
-
-  function renderList(list){
-    const ul = $('#chl'); ul.innerHTML = '';
-    const items = list || feed.channels;
-    items.forEach(c => {
-      const li = document.createElement('li');
-      const resolved = feed.channels.find(f => (c.channel_id && f.channel_id === c.channel_id) || (c.handle && f.handle && f.handle.toLowerCase() === c.handle.toLowerCase())) || c;
-      if (!resolved.name) li.className = 'pending';
-      li.innerHTML = `<img src="${esc(resolved.avatar||'')}" alt=""><div class="nm"><b>${esc(resolved.name || (c.handle ? '@'+c.handle : c.channel_id))}</b><span>${resolved.name ? (c.handle ? '@'+esc(c.handle) : esc(c.channel_id||'')) : 'aguardando republicação…'}</span></div><button class="btn danger">Remover</button>`;
-      li.querySelector('button').onclick = () => {
-        if (!confirm(`Remover ${resolved.name || c.handle} da lista?`)) return;
-        updateChannels(l => l.filter(x => !((c.channel_id && x.channel_id === c.channel_id) || (c.handle && x.handle && x.handle.toLowerCase() === c.handle.toLowerCase()))), `Remove canal ${resolved.name || c.handle}`);
-      };
-      ul.appendChild(li);
-    });
-  }
-  async function waitForRebuild(){
-    const since = get(LS.pendingSince, null); if (!since) return;
-    for (let i = 0; i < 24; i++) {
-      await new Promise(r => setTimeout(r, 15000));
-      try { const r = await fetch(`feed.json?t=${Date.now()}`, {cache:'no-store'}); const j = await r.json();
-        if (j.generated_at > since) { set(LS.pendingSince, null); toast('Feed atualizado, recarregando…'); setTimeout(() => location.reload(), 800); return; } } catch(e){}
-    }
-    set(LS.pendingSince, null);
-  }
-  if (get(LS.pendingSince, null) && get(LS.pendingSince, null) >= feed.generated_at) waitForRebuild(); else set(LS.pendingSince, null);
 
   renderChips(); render();
 })();
