@@ -164,7 +164,7 @@ O que está público e o que não está:
 - A página só pode carregar imagens do YouTube e o player do YouTube, e só roda o próprio script (política de segurança de conteúdo com hash). Se alguém conseguisse injetar texto malicioso via título de vídeo, ele não executaria.
 - O script do GitHub Actions usa versões fixadas por hash das ações oficiais do GitHub, e o repositório só aceita ações feitas pelo próprio GitHub. Permissões do workflow: leitura do código e escrita só no Pages.
 - Issues e wiki estão desligados para não virar depósito de spam.
-- Ao abrir vídeos, o YouTube vê que você assistiu, como em qualquer uso logado. A página não manda o endereço dela ao YouTube (`referrer` desligado).
+- Ao abrir vídeos, o YouTube vê que você assistiu, como em qualquer uso logado. A página manda ao YouTube só a sua origem (`https://ojoaorc.github.io`), sem caminho nem parâmetros. O player exige isso desde 2025: sem o cabeçalho Referer ele mostra "erro 153", principalmente no Safari e no iPhone.
 
 ## 12. Mapa dos arquivos
 
