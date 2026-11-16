@@ -24,16 +24,17 @@ NS = {"a": "http://www.w3.org/2005/Atom", "yt": "http://www.youtube.com/xml/sche
 UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36"
 
 
-def fetch(url, tries=3):
+def fetch(url, tries=6):
+    """GET com novas tentativas. O RSS do YouTube às vezes responde 404/500 de forma intermitente."""
     for i in range(tries):
         try:
             req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept-Language": "en"})
             with urllib.request.urlopen(req, timeout=20) as r:
                 return r.read()
-        except Exception:  # noqa: BLE001
+        except Exception as e:  # noqa: BLE001
             if i == tries - 1:
                 raise
-            time.sleep(2 * (i + 1))
+            time.sleep(3 * (i + 1) if not isinstance(e, urllib.error.HTTPError) or e.code >= 500 or e.code == 404 else 1)
 
 
 def resolve(ch):
@@ -143,11 +144,12 @@ def main():
         except Exception as e:  # noqa: BLE001
             errors.append(f"{ch['name']}: {e}")
             print(f"ERRO {ch['name']}: {e}", file=sys.stderr)
-    if not videos:
-        sys.exit("nenhum vídeo obtido; abortando para não publicar página vazia")
-
     # ---- histórico: junta com o que já foi publicado (o RSS só traz os ~15 últimos de cada canal)
     prev = load_previous()
+    if not videos and not prev:
+        sys.exit("nenhum vídeo obtido e sem histórico; abortando para não publicar página vazia")
+    if not videos:
+        errors.append("YouTube não respondeu nesta rodada; mostrando o histórico")
     active_ids = {c["channel_id"] for c in channels if c.get("channel_id")}
     merged = {v["id"]: v for v in videos}
     for vid, old in prev.items():
