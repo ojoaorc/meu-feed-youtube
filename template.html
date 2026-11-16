@@ -146,6 +146,7 @@
       <button class="chip" data-range="60">2 meses</button>
       <button class="chip" data-range="0">Tudo</button>
       <button class="chip" id="toggleShorts">Shorts</button>
+      <button class="chip" id="toggleApp" title="Onde abrir os vídeos">Abrir: aqui</button>
       <span class="sep"></span>
       <button class="chip" id="toggleSeen">Ocultar vistos</button>
       <button class="chip" id="markAll">Marcar tudo como visto</button>
@@ -177,7 +178,7 @@
 (function(){
   const feed = JSON.parse(document.getElementById('feed').textContent);
   const $ = s => document.querySelector(s);
-  const LS = { seen:'yf.seen', last:'yf.lastVisit', hide:'yf.hideSeen', ch:'yf.channels', theme:'yf.theme', shorts:'yf.shorts', range:'yf.range', auto:'yf.autonext' };
+  const LS = { seen:'yf.seen', last:'yf.lastVisit', hide:'yf.hideSeen', ch:'yf.channels', theme:'yf.theme', shorts:'yf.shorts', range:'yf.range', auto:'yf.autonext', open:'yf.open' };
   const get = (k, d) => { try { const v = localStorage.getItem(k); return v==null ? d : JSON.parse(v); } catch(e){ return d; } };
   const set = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} };
   const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -190,6 +191,10 @@
   let active = new Set(get(LS.ch, allIds).filter(id => allIds.includes(id)));
   if (!active.size) active = new Set(allIds);
   let rangeDays = get(LS.range, 14), query = '', showShorts = get(LS.shorts, false), limit = 120, onlyNew = false, autoNext = get(LS.auto, false);
+  // No iPhone/iPad o WebKit bloqueia os cookies do YouTube dentro de players embutidos (sem login, sem Premium).
+  // Lá, o padrão é abrir o vídeo no app do YouTube; o chip "Abrir" troca a qualquer hora.
+  const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  let openExt = get(LS.open, isIOS ? 'app' : 'aqui') === 'app';
   const isNewV = v => lastVisit && new Date(v.published) > lastVisit && !seen.has(v.id);
   const now = Date.now();
   addEventListener('pagehide', () => set(LS.last, now));
@@ -243,6 +248,10 @@
   const syncShorts = () => { togS.classList.toggle('on', showShorts); togS.textContent = showShorts ? 'Com Shorts' : 'Sem Shorts'; };
   togS.onclick = () => { showShorts = !showShorts; set(LS.shorts, showShorts); syncShorts(); renderChips(); render(); };
   syncShorts();
+  const togA = $('#toggleApp');
+  const syncApp = () => { togA.classList.toggle('on', openExt); togA.textContent = openExt ? 'Abrir: no YouTube' : 'Abrir: aqui'; };
+  togA.onclick = () => { openExt = !openExt; set(LS.open, openExt ? 'app' : 'aqui'); syncApp(); toast(openExt ? 'Vídeos abrem no app/site do YouTube, com seu login' : 'Vídeos abrem aqui, no player embutido'); };
+  syncApp();
   $('#more').onclick = () => { limit += 120; render(true); };
   const tog = $('#toggleSeen');
   const syncTog = () => { tog.classList.toggle('on', hideSeen); tog.textContent = hideSeen ? 'Só não vistos' : 'Ocultar vistos'; };
@@ -304,8 +313,9 @@
       // capa em alta resolução quando existir (a maxres do YouTube vem como 120x90 quando não existe)
       const img = card.querySelector('.thumb img');
       const hi = new Image(); hi.onload = () => { if (hi.naturalWidth > 320) img.src = hi.src; }; hi.src = `https://i.ytimg.com/vi/${v.id}/maxresdefault.jpg`;
-      card.querySelector('.thumb').onclick = () => openPlayer(v);
-      card.querySelector('.title').onclick = () => openPlayer(v);
+      const open = () => openExt ? card.querySelector('a').click() : openPlayer(v);   // o <a> real preserva o toque do usuário (abre o app do YouTube no iPhone)
+      card.querySelector('.thumb').onclick = open;
+      card.querySelector('.title').onclick = open;
       card.querySelector('a').addEventListener('click', () => markSeen(v));
       grid.appendChild(card);
     });

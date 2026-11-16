@@ -32,6 +32,7 @@ O que fica no seu navegador, e não no GitHub: quais vídeos você marcou como v
 
 - **Novos**: chip que aparece quando há vídeos publicados desde a sua última visita; clique para ver só eles.
 - Clique num canal para ligar/desligar; duplo clique mostra só ele. Tudo isso fica salvo no navegador, inclusive o período escolhido.
+- **Abrir: aqui / no YouTube**: escolhe se a capa e o título abrem o player embutido ou o app/site do YouTube (com seu login e Premium). No iPhone/iPad o padrão é "no YouTube", porque o player embutido roda deslogado lá (veja a seção 6).
 - **Player**: capa ou título abrem o vídeo na própria página. Setas ← → (ou os botões) passam para o anterior/próximo da lista visível. **Auto ▶** faz o próximo abrir sozinho quando você fecha. O botão Voltar do celular fecha o player.
 - Teclado: `/` foca a busca, `Esc` fecha o player ou limpa a busca.
 - Ao rolar a página para baixo, o cabeçalho encolhe; ao rolar para cima, volta.
@@ -113,7 +114,7 @@ O histórico vive no `feed.json` publicado, não no repositório. Para zerar, ed
 O GitHub desliga as rodadas agendadas de repositórios sem nenhum commit por 60 dias. Em https://github.com/ojoaorc/meu-feed-youtube/actions aparece um aviso com um botão para reativar. Qualquer commit (por exemplo, adicionar um canal) também reativa.
 
 **O player embutido mostra anúncios ou pede login.**
-O player usa o site do YouTube dentro da página, então vale o login do navegador em que você está. No Chrome logado na sua conta Premium, toca sem anúncios. No Safari, que bloqueia cookies de outros sites por padrão, o player roda deslogado. Use "Abrir no YouTube" ou troque de navegador. Alguns criadores proíbem embutir; o player avisa e o mesmo botão resolve.
+O player usa o site do YouTube dentro da página, então vale o login do navegador em que você está. No Chrome do computador logado na sua conta Premium, toca sem anúncios. No Safari e em qualquer navegador do iPhone/iPad, o sistema bloqueia os cookies de outros sites dentro de players embutidos, e o YouTube roda deslogado; não há como mudar isso pela página. Por isso, no iPhone/iPad o padrão é o chip **Abrir: no YouTube**: tocar num vídeo abre o app do YouTube (ou o site), onde o Premium vale, e o vídeo fica marcado como visto. O chip **Abrir: aqui** volta para o player embutido, com anúncios. Alguns criadores proíbem embutir; o player avisa e o mesmo botão resolve.
 
 **Quero limpar os "vistos" e começar do zero.**
 Isso fica no navegador, não no GitHub. No navegador, apague os dados do site `ojoaorc.github.io` (em Safari: Ajustes > Privacidade > Gerenciar dados de sites; em Chrome: cadeado na barra de endereço > Cookies e dados do site > Gerenciar).
