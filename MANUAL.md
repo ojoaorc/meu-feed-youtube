@@ -172,6 +172,7 @@ O que está público e o que não está:
 |---|---|---|
 | `channels.json` | Lista de canais | Sim, é o dia a dia |
 | `template.html` | A página (visual e comportamento) | Só para mudar visual ou textos |
+| `static/player.html` | Página intermediária que embute o player do YouTube (evita o erro 153 no iPhone) | Nunca |
 | `build.py` | Script que lê o RSS, junta o histórico, marca Shorts e gera a página | Raramente |
 | `static/` | Manifest e ícones do PWA; copiados para `docs/` a cada rodada | Só para trocar o ícone |
 | `make_icons.py` | Gera os PNGs a partir de `static/icon.svg` no macOS (só se trocar o ícone) | Não |

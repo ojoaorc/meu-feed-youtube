@@ -223,6 +223,13 @@ def parse(xml_bytes, channel):
     return out
 
 
+def with_csp_hash(html):
+    """CSP: só o script inline da página (pelo hash) pode rodar; nenhum script externo, nenhum handler inline."""
+    script = re.search(r"<script>(.*?)</script>", html, re.S).group(1)
+    digest = base64.b64encode(hashlib.sha256(script.encode()).digest()).decode()
+    return html.replace("__SCRIPT_HASH__", f"sha256-{digest}")
+
+
 def main():
     raw = json.loads((ROOT / "channels.json").read_text())
     channels, videos, errors = [], [], []
@@ -299,11 +306,8 @@ def main():
     html = (ROOT / "template.html").read_text()
     payload = json.dumps(feed, ensure_ascii=False).replace("</", "<\\/")  # protege o </script>
     html = html.replace("__FEED_JSON__", payload)
-    # CSP: só o script inline desta página (pelo hash) pode rodar; nenhum script externo, nenhum handler inline.
-    script = re.search(r"<script>(.*?)</script>", html, re.S).group(1)
-    digest = base64.b64encode(hashlib.sha256(script.encode()).digest()).decode()
-    html = html.replace("__SCRIPT_HASH__", f"sha256-{digest}")
-    (docs / "index.html").write_text(html)
+    (docs / "index.html").write_text(with_csp_hash(html))
+    (docs / "player.html").write_text(with_csp_hash((ROOT / "static" / "player.html").read_text()))
     print(f"{len(videos)} vídeos de {len(channels)} canais ({sum(1 for v in videos if v.get("is_short"))} Shorts) -> docs/index.html", file=sys.stderr)
 
 
