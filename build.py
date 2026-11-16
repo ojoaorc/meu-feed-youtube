@@ -8,7 +8,7 @@ Cada feed traz os ~15 vídeos mais recentes do canal.
 Entradas de channels.json podem ter só "handle" (ex.: "garyseconomics"); o channel_id,
 o nome e o avatar são resolvidos aqui a partir da página pública do canal.
 """
-import json, os, re, shutil, sys, time, urllib.error, urllib.request, xml.etree.ElementTree as ET
+import base64, hashlib, json, os, re, shutil, sys, time, urllib.error, urllib.request, xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
@@ -50,10 +50,13 @@ def resolve(ch):
         ch["resolve_error"] = str(e)
         return ch
     if not cid:
-        m = re.search(r'"externalId":"(UC[\w-]+)"', html)
+        m = re.search(r'"externalId":"(UC[\w-]{22})"', html)
         if m:
             ch["channel_id"] = m.group(1)
-    m = re.search(r'<meta property="og:image" content="([^"]+)"', html)
+    elif not re.fullmatch(r"UC[\w-]{22}", cid):
+        ch["channel_id"] = None
+        ch["resolve_error"] = "channel_id inválido"
+    m = re.search(r'<meta property="og:image" content="(https://yt3\.(?:googleusercontent|ggpht)\.com/[^"]+)"', html)
     if m:
         ch["avatar"] = m.group(1).replace("&amp;", "&")
     if not ch.get("name"):
@@ -107,8 +110,8 @@ def parse(xml_bytes, channel):
     root = ET.fromstring(xml_bytes)
     out = []
     for e in root.findall("a:entry", NS):
-        vid = e.findtext("yt:videoId", namespaces=NS)
-        if not vid:
+        vid = e.findtext("yt:videoId", namespaces=NS) or ""
+        if not re.fullmatch(r"[A-Za-z0-9_-]{11}", vid):   # só IDs com cara de ID entram no HTML
             continue
         desc = e.findtext("media:group/media:description", namespaces=NS) or ""
         views = e.find("media:group/media:community/media:statistics", NS)
@@ -190,7 +193,12 @@ def main():
     (docs / "feed.json").write_text(json.dumps(feed, ensure_ascii=False, indent=1))
     html = (ROOT / "template.html").read_text()
     payload = json.dumps(feed, ensure_ascii=False).replace("</", "<\\/")  # protege o </script>
-    (docs / "index.html").write_text(html.replace("__FEED_JSON__", payload))
+    html = html.replace("__FEED_JSON__", payload)
+    # CSP: só o script inline desta página (pelo hash) pode rodar; nenhum script externo, nenhum handler inline.
+    script = re.search(r"<script>(.*?)</script>", html, re.S).group(1)
+    digest = base64.b64encode(hashlib.sha256(script.encode()).digest()).decode()
+    html = html.replace("__SCRIPT_HASH__", f"sha256-{digest}")
+    (docs / "index.html").write_text(html)
     print(f"{len(videos)} vídeos de {len(channels)} canais ({sum(1 for v in videos if v.get("is_short"))} Shorts) -> docs/index.html", file=sys.stderr)
 
 

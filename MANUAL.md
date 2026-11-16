@@ -143,7 +143,19 @@ O `build.py` imprime um `ok NomeDoCanal (15)` por canal e escreve `docs/index.ht
 - **Desligar as atualizações sem apagar nada:** em Actions, clique em "Atualizar feed" na lateral, depois no menu `...` > Disable workflow.
 - **Apagar tudo:** Settings > General > Danger Zone > Delete this repository. A página sai do ar junto.
 
-## 11. Mapa dos arquivos
+## 11. Segurança e privacidade
+
+O que está público e o que não está:
+
+- O repositório é público, e precisa ser para o GitHub Pages gratuito. Nele há só código, a lista de canais e este manual. Nenhuma chave, senha ou token: o projeto não usa nenhum.
+- Os commits usam o e-mail anônimo do GitHub (`83012445+ojoaorc@users.noreply.github.com`), não o seu e-mail pessoal. Para manter assim em edições pelo site do GitHub, ative em https://github.com/settings/emails as duas caixas **Keep my email addresses private** e **Block command line pushes that expose my email**. Se um dia fizer push por terminal em outra máquina, rode antes `git config user.email 83012445+ojoaorc@users.noreply.github.com` dentro da pasta do projeto.
+- A página tem `noindex` (não aparece em buscadores), não usa analytics, cookies nem scripts de terceiros. O que ela guarda (vistos, filtros, tema) fica só no seu navegador.
+- A página só pode carregar imagens do YouTube e o player do YouTube, e só roda o próprio script (política de segurança de conteúdo com hash). Se alguém conseguisse injetar texto malicioso via título de vídeo, ele não executaria.
+- O script do GitHub Actions usa versões fixadas por hash das ações oficiais do GitHub, e o repositório só aceita ações feitas pelo próprio GitHub. Permissões do workflow: leitura do código e escrita só no Pages.
+- Issues e wiki estão desligados para não virar depósito de spam.
+- Ao abrir vídeos, o YouTube vê que você assistiu, como em qualquer uso logado. A página não manda o endereço dela ao YouTube (`referrer` desligado).
+
+## 12. Mapa dos arquivos
 
 | Arquivo | O que é | Mexer? |
 |---|---|---|
@@ -151,7 +163,7 @@ O `build.py` imprime um `ok NomeDoCanal (15)` por canal e escreve `docs/index.ht
 | `template.html` | A página (visual e comportamento) | Só para mudar visual ou textos |
 | `build.py` | Script que lê o RSS, junta o histórico, marca Shorts e gera a página | Raramente |
 | `static/` | Manifest e ícones do PWA; copiados para `docs/` a cada rodada | Só para trocar o ícone |
-| `make_icons.py` | Gera os ícones em `static/` (não precisa rodar) | Não |
+| `make_icons.py` | Gera os PNGs a partir de `static/icon.svg` no macOS (só se trocar o ícone) | Não |
 | `.github/workflows/build.yml` | Agendamento e publicação no Pages | Só para mudar a frequência |
 | `docs/` | Página gerada; não está no repositório (está no `.gitignore`), é produzida a cada rodada | Nunca |
 | `README.md` | Resumo técnico | Não |

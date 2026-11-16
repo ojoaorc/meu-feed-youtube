@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Jolly Roger do feed: caveira de bandana, tapa-olho e um play no lugar do olho bom -->
+  <rect width="512" height="512" rx="112" fill="#12101c"/>
+  <g stroke="#f4efe6" stroke-width="30" stroke-linecap="round">
+    <line x1="120" y1="392" x2="392" y2="120"/>
+    <line x1="120" y1="120" x2="392" y2="392"/>
+  </g>
+  <g fill="#f4efe6">
+    <circle cx="120" cy="120" r="24"/><circle cx="392" cy="120" r="24"/>
+    <circle cx="120" cy="392" r="24"/><circle cx="392" cy="392" r="24"/>
+  </g>
+  <!-- crânio -->
+  <ellipse cx="256" cy="236" rx="138" ry="128" fill="#f4efe6"/>
+  <rect x="166" y="300" width="180" height="98" rx="40" fill="#f4efe6"/>
+  <!-- dentes -->
+  <g fill="#12101c">
+    <rect x="212" y="352" width="18" height="44" rx="6"/>
+    <rect x="247" y="352" width="18" height="44" rx="6"/>
+    <rect x="282" y="352" width="18" height="44" rx="6"/>
+  </g>
+  <!-- bandana -->
+  <path d="M118 212 Q256 60 394 212 L394 190 Q256 38 118 190 Z" fill="#ff2e88"/>
+  <path d="M120 200 Q256 100 392 200 Q256 150 120 200 Z" fill="#ff2e88"/>
+  <path d="M118 198 C60 170 40 220 36 262 C70 240 92 236 118 232 Z" fill="#ff2e88"/>
+  <path d="M118 232 C70 248 48 300 52 330 C80 300 100 282 126 262 Z" fill="#ff2e88"/>
+  <g fill="#ffd60a"><circle cx="190" cy="150" r="9"/><circle cx="256" cy="134" r="9"/><circle cx="322" cy="150" r="9"/></g>
+  <!-- tapa-olho (esquerdo) -->
+  <path d="M130 196 Q256 176 382 206" stroke="#12101c" stroke-width="14" fill="none" stroke-linecap="round"/>
+  <ellipse cx="200" cy="238" rx="46" ry="40" fill="#12101c"/>
+  <!-- olho bom com play (direito) -->
+  <ellipse cx="312" cy="238" rx="46" ry="40" fill="#12101c"/>
+  <path d="M298 216 L338 238 L298 260 Z" fill="#b6ff3b"/>
+  <!-- nariz -->
+  <path d="M256 268 L240 300 L272 300 Z" fill="#12101c"/>
+</svg>
