@@ -20,11 +20,23 @@ channels.json  ──►  build.py  ──►  docs/index.html  ──►  GitHu
 
 1. `channels.json` é a lista de canais. É o único arquivo que você precisa mexer no dia a dia.
 2. A cada 3 horas o GitHub roda `build.py`. Ele lê o feed RSS público de cada canal (o YouTube publica um por canal, sem precisar de chave ou login), junta os vídeos, ordena por data e gera a página.
+   - O RSS só traz os 15 vídeos mais recentes de cada canal. Para não perder os anteriores, o script baixa o `feed.json` que já está publicado e junta com o novo. Assim o histórico cresce a cada rodada (até 2 anos ou 3.000 vídeos).
+   - Para cada vídeo novo ele pergunta ao YouTube se é um Short (um pedido leve por vídeo, só na primeira vez que o vídeo aparece). Na página, o botão **Sem Shorts / Com Shorts** usa essa marcação.
 3. A página gerada vai para o GitHub Pages. Nada roda no seu computador.
 
-O que fica no seu navegador, e não no GitHub: quais vídeos você marcou como vistos, quais canais estão ligados no filtro, o tema claro ou escuro e a data da sua última visita (que dá o selo NOVO). Isso é por navegador: o celular não sabe o que você marcou no Mac.
+O que fica no seu navegador, e não no GitHub: quais vídeos você marcou como vistos, quais canais estão ligados no filtro, se Shorts aparecem, o tema claro ou escuro e a data da sua última visita (que dá o selo NOVO). Isso é por navegador: o celular não sabe o que você marcou no Mac.
 
 ---
+
+## 1b. Instalar como aplicativo no celular
+
+A página é um PWA: dá para colocar na tela inicial, com ícone e tela cheia, sem barra do navegador.
+
+- **iPhone (Safari):** abra a página, toque no botão Compartilhar (quadrado com seta) e em **Adicionar à Tela de Início**.
+- **Android (Chrome):** abra a página, toque no menu ⋮ e em **Instalar app** (ou **Adicionar à tela inicial**).
+- **Mac/PC (Chrome):** ícone de instalar que aparece na barra de endereço, à direita.
+
+É só um atalho para a mesma página; nada é baixado além dela. Lembre que o player embutido depende do login do navegador que abriu o PWA.
 
 ## 2. Adicionar um canal
 
@@ -78,7 +90,13 @@ Abra a página do feed e olhe a linha "Atualizado ..." no topo. Se houver um avi
 Clique na rodada, depois em `build`, e leia a linha que começa com `ERRO`. Quase sempre é um `channels.json` com erro de digitação: vírgula faltando ou sobrando, aspas abertas sem fechar, chave `{` ou colchete `]` a mais ou a menos. Você pode colar o conteúdo do arquivo em https://jsonlint.com para apontar a linha exata. Corrija e salve de novo; a correção dispara outra rodada.
 
 **A página mostra "nada novo" mas eu sei que saiu vídeo.**
-Verifique três coisas: o filtro de período (talvez esteja em "2 semanas" e o vídeo é mais antigo), o filtro de canais (o canal pode estar desligado no topo) e o botão "Ocultar vistos" (se estiver ativo, vídeos já marcados somem). Clicar em "Tudo" e desligar "Só não vistos" mostra todos.
+Verifique quatro coisas: o filtro de período (talvez esteja em "2 semanas" e o vídeo é mais antigo), o filtro de canais (o canal pode estar desligado no topo), o botão "Ocultar vistos" (se estiver ativo, vídeos já marcados somem) e o botão "Sem Shorts" (o vídeo pode ser um Short). Clicar em "Tudo", "Com Shorts" e desligar "Só não vistos" mostra todos.
+
+**Um vídeo normal está marcado como SHORT, ou um Short passou sem marca.**
+A classificação vem do próprio YouTube e é feita uma vez só, quando o vídeo aparece. Raramente erra; se errar, não há o que fazer sem mexer no código (o botão "Com Shorts" mostra tudo).
+
+**Quero zerar o histórico acumulado.**
+O histórico vive no `feed.json` publicado, não no repositório. Para zerar, edite `build.py`, troque `MAX_DAYS = 730` por `MAX_DAYS = 30`, salve, espere uma rodada e volte ao valor anterior.
 
 **O feed parou de atualizar sozinho por semanas.**
 O GitHub desliga as rodadas agendadas de repositórios sem nenhum commit por 60 dias. Em https://github.com/ojoaorc/meu-feed-youtube/actions aparece um aviso com um botão para reativar. Qualquer commit (por exemplo, adicionar um canal) também reativa.
@@ -131,7 +149,9 @@ O `build.py` imprime um `ok NomeDoCanal (15)` por canal e escreve `docs/index.ht
 |---|---|---|
 | `channels.json` | Lista de canais | Sim, é o dia a dia |
 | `template.html` | A página (visual e comportamento) | Só para mudar visual ou textos |
-| `build.py` | Script que lê o RSS e gera a página | Raramente |
+| `build.py` | Script que lê o RSS, junta o histórico, marca Shorts e gera a página | Raramente |
+| `static/` | Manifest e ícones do PWA; copiados para `docs/` a cada rodada | Só para trocar o ícone |
+| `make_icons.py` | Gera os ícones em `static/` (não precisa rodar) | Não |
 | `.github/workflows/build.yml` | Agendamento e publicação no Pages | Só para mudar a frequência |
 | `docs/` | Página gerada; não está no repositório (está no `.gitignore`), é produzida a cada rodada | Nunca |
 | `README.md` | Resumo técnico | Não |

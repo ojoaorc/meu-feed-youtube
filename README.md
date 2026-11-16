@@ -11,6 +11,7 @@ Atualizada a cada 3 horas pelo GitHub Actions e publicada no GitHub Pages.
 - `template.html` — a página. Busca, filtros por canal e período, player embutido, marcar como visto e selo "NOVO" desde a última visita (tudo no `localStorage` do navegador).
 - Player embutido usa `youtube.com/embed`, então vale o login do YouTube do próprio navegador (Premium sem anúncios). Safari bloqueia cookies de terceiros por padrão; no Chrome funciona.
 - `.github/workflows/build.yml` — roda o script e publica no Pages.
+- `static/` — manifest e ícones do PWA (instalável na tela inicial).
 
 ## Adicionar um canal
 Edite `channels.json` e acrescente `{"handle": "nomedocanal"}`; o `build.py` resolve ID, nome e avatar. Passo a passo em [MANUAL.md](MANUAL.md).
@@ -21,5 +22,6 @@ python3 build.py && open docs/index.html
 ```
 
 ## Limitações
-- O RSS do YouTube traz só os ~15 vídeos mais recentes de cada canal e inclui Shorts.
+- O RSS do YouTube traz só os ~15 vídeos mais recentes de cada canal; o `build.py` junta com o `feed.json` já publicado para acumular histórico (até 2 anos / 3000 vídeos).
+- Shorts são detectados com um HEAD em `youtube.com/shorts/ID` (200 = Short, 303 = vídeo normal), uma vez por vídeo.
 - Contagem de views vem do RSS e pode estar defasada.
