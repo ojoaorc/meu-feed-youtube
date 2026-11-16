@@ -22,6 +22,7 @@ python3 build.py && open docs/index.html
 ```
 
 ## Limitações
+- O endpoint de RSS do YouTube responde 404 de forma intermitente (minutos seguidos). Por canal, o `build.py` tenta RSS por `channel_id`, RSS da playlist de uploads (`UU...`) e, por fim, a página pública `/videos` do canal (vídeos novos pegam a data exata na página `/watch`); canais que falharem são tentados de novo após 2 min.
 - O RSS do YouTube traz só os ~15 vídeos mais recentes de cada canal; o `build.py` junta com o `feed.json` já publicado para acumular histórico (até 2 anos / 3000 vídeos).
 - Shorts são detectados com um HEAD em `youtube.com/shorts/ID` (200 = Short, 303 = vídeo normal), uma vez por vídeo.
 - Contagem de views vem do RSS e pode estar defasada.

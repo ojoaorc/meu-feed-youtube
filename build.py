@@ -5,10 +5,15 @@ Usa o feed RSS público do YouTube (sem chave de API, sem cota):
 https://www.youtube.com/feeds/videos.xml?channel_id=UC...
 Cada feed traz os ~15 vídeos mais recentes do canal.
 
+O endpoint de RSS às vezes passa alguns minutos respondendo 404 para todo mundo. Por isso cada canal
+tem três caminhos, tentados em ordem: RSS por channel_id, RSS pela playlist de uploads (UU...) e, se os
+dois falharem, a página pública /videos do canal (vídeos novos ganham data exata pela página do vídeo).
+Canais que ainda assim falharem são tentados de novo depois de uma pausa.
+
 Entradas de channels.json podem ter só "handle" (ex.: "garyseconomics"); o channel_id,
 o nome e o avatar são resolvidos aqui a partir da página pública do canal.
 """
-import base64, hashlib, json, os, re, shutil, sys, time, urllib.error, urllib.request, xml.etree.ElementTree as ET
+import base64, hashlib, html as _html, json, os, re, shutil, sys, time, urllib.error, urllib.request, xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
@@ -92,6 +97,95 @@ def is_short(vid):
     return None
 
 
+def _channel_videos(o):
+    """Percorre o JSON da página do canal e devolve (videoId, título) de cada vídeo listado.
+    Aceita o layout antigo (videoRenderer) e o atual (lockupViewModel)."""
+    if isinstance(o, dict):
+        r = o.get("videoRenderer")
+        if isinstance(r, dict) and r.get("videoId"):
+            yield r["videoId"], "".join(x.get("text", "") for x in r.get("title", {}).get("runs", []))
+        lv = o.get("lockupViewModel")
+        if isinstance(lv, dict) and lv.get("contentType") == "LOCKUP_CONTENT_TYPE_VIDEO" and lv.get("contentId"):
+            yield lv["contentId"], lv.get("metadata", {}).get("lockupMetadataViewModel", {}).get("title", {}).get("content", "")
+        for v in o.values():
+            yield from _channel_videos(v)
+    elif isinstance(o, list):
+        for v in o:
+            yield from _channel_videos(v)
+
+
+def _watch_details(vid):
+    """Data exata, título e descrição de um vídeo, lidos da página /watch (só para vídeos ainda desconhecidos)."""
+    html = fetch(f"https://www.youtube.com/watch?v={vid}", tries=2).decode("utf-8", "replace")
+    m = re.search(r'"publishDate":"([^"]+)"', html) or re.search(r'itemprop="datePublished" content="([^"]+)"', html)
+    if not m:
+        raise ValueError("sem publishDate")
+    published = datetime.fromisoformat(m.group(1)).astimezone(timezone.utc).isoformat(timespec="seconds")
+    t = re.search(r'<meta name="title" content="([^"]*)"', html)
+    d = re.search(r'"shortDescription":"((?:[^"\\]|\\.)*)"', html)
+    v = re.search(r'"viewCount":"(\d+)"', html)
+    return {
+        "published": published,
+        "title": _html.unescape(t.group(1)) if t else None,
+        "description": json.loads('"' + d.group(1) + '"')[:400] if d else "",
+        "views": int(v.group(1)) if v else None,
+    }
+
+
+def scrape_channel(ch, prev, max_new=10):
+    """Plano B sem RSS: lê a página /videos do canal. Vídeos já conhecidos vêm do histórico; os novos
+    buscam data exata na própria página do vídeo (no máximo max_new por rodada)."""
+    html = fetch(f"https://www.youtube.com/channel/{ch['channel_id']}/videos", tries=2).decode("utf-8", "replace")
+    m = re.search(r"var ytInitialData = (\{.*?\});</script>", html, re.S)
+    if not m:
+        raise ValueError("página do canal sem ytInitialData")
+    out, new = [], 0
+    seen = set()
+    for vid, title in _channel_videos(json.loads(m.group(1))):
+        if vid in seen or not re.fullmatch(r"[A-Za-z0-9_-]{11}", vid):
+            continue
+        seen.add(vid)
+        if vid in prev:
+            out.append(dict(prev[vid], channel=ch["name"], channel_id=ch["channel_id"]))
+            continue
+        if new >= max_new:
+            continue
+        new += 1
+        det = _watch_details(vid)
+        out.append({
+            "id": vid,
+            "title": det["title"] or title,
+            "channel": ch["name"],
+            "channel_id": ch["channel_id"],
+            "published": det["published"],
+            "url": f"https://www.youtube.com/watch?v={vid}",
+            "thumb": f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg",
+            "description": det["description"],
+            "views": det["views"],
+            "is_short": False,   # a aba /videos não lista Shorts
+        })
+    if not out:
+        raise ValueError("página do canal sem vídeos")
+    return out
+
+
+def collect(ch, prev):
+    """Vídeos de um canal: RSS (duas URLs) e, se ambos falharem, a página do canal. Devolve (vídeos, origem)."""
+    cid = ch["channel_id"]
+    errs = []
+    for url in (f"https://www.youtube.com/feeds/videos.xml?channel_id={cid}",
+                f"https://www.youtube.com/feeds/videos.xml?playlist_id=UU{cid[2:]}"):
+        try:
+            return parse(fetch(url, tries=3), ch), "rss"
+        except Exception as e:  # noqa: BLE001
+            errs.append(str(e))
+    try:
+        return scrape_channel(ch, prev), "página do canal"
+    except Exception as e:  # noqa: BLE001
+        errs.append(f"página: {e}")
+    raise RuntimeError("; ".join(errs))
+
+
 def load_previous():
     """Vídeos já conhecidos: do feed publicado no Pages e, se existir, do docs/feed.json local."""
     prev = {}
@@ -132,6 +226,9 @@ def parse(xml_bytes, channel):
 def main():
     raw = json.loads((ROOT / "channels.json").read_text())
     channels, videos, errors = [], [], []
+    # histórico: o que já foi publicado (o RSS só traz os ~15 últimos de cada canal) — também serve ao plano B
+    prev = load_previous()
+    pending = []
     for ch in raw:
         ch = resolve(ch)
         channels.append(ch)
@@ -139,16 +236,24 @@ def main():
             errors.append(f"{ch.get('name') or ch.get('handle')}: não achei o channel_id")
             print(f"ERRO {ch}", file=sys.stderr)
             continue
-        url = f"https://www.youtube.com/feeds/videos.xml?channel_id={ch['channel_id']}"
-        try:
-            vs = parse(fetch(url), ch)
-            videos += vs
-            print(f"ok   {ch['name']} ({len(vs)})", file=sys.stderr)
-        except Exception as e:  # noqa: BLE001
-            errors.append(f"{ch['name']}: {e}")
-            print(f"ERRO {ch['name']}: {e}", file=sys.stderr)
-    # ---- histórico: junta com o que já foi publicado (o RSS só traz os ~15 últimos de cada canal)
-    prev = load_previous()
+        pending.append(ch)
+    # duas passadas: quem falhar na primeira é tentado de novo depois de uma pausa, para sair da janela ruim
+    for attempt in range(2):
+        if attempt and pending:
+            pause = 120 if os.environ.get("GITHUB_ACTIONS") else 5
+            print(f"{len(pending)} canal(is) sem resposta; nova tentativa em {pause}s", file=sys.stderr)
+            time.sleep(pause)
+        failed = []
+        for ch in pending:
+            try:
+                vs, origem = collect(ch, prev)
+                videos += vs
+                print(f"ok   {ch['name']} ({len(vs)}, via {origem})", file=sys.stderr)
+            except Exception as e:  # noqa: BLE001
+                failed.append((ch, e))
+                print(f"ERRO {ch['name']}: {e}", file=sys.stderr)
+        pending = [ch for ch, _ in failed]
+    errors += [f"{ch['name']}: {e}" for ch, e in failed]
     if not videos and not prev:
         sys.exit("nenhum vídeo obtido e sem histórico; abortando para não publicar página vazia")
     if not videos:

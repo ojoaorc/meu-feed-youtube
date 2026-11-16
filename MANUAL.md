@@ -19,7 +19,7 @@ channels.json  ──►  build.py  ──►  docs/index.html  ──►  GitHu
 ```
 
 1. `channels.json` é a lista de canais. É o único arquivo que você precisa mexer no dia a dia.
-2. A cada 3 horas o GitHub roda `build.py`. Ele lê o feed RSS público de cada canal (o YouTube publica um por canal, sem precisar de chave ou login), junta os vídeos, ordena por data e gera a página.
+2. A cada 3 horas o GitHub roda `build.py`. Ele lê o feed RSS público de cada canal (o YouTube publica um por canal, sem precisar de chave ou login), junta os vídeos, ordena por data e gera a página. Se o RSS não responder, lê a página pública do canal como plano B.
    - O RSS só traz os 15 vídeos mais recentes de cada canal. Para não perder os anteriores, o script baixa o `feed.json` que já está publicado e junta com o novo. Assim o histórico cresce a cada rodada (até 2 anos ou 3.000 vídeos).
    - Para cada vídeo novo ele pergunta ao YouTube se é um Short (um pedido leve por vídeo, só na primeira vez que o vídeo aparece). Na página, o botão **Sem Shorts / Com Shorts** usa essa marcação.
 3. A página gerada vai para o GitHub Pages. Nada roda no seu computador.
@@ -93,6 +93,9 @@ A atualização automática roda a cada 3 horas. Para não esperar:
 
 **Um canal não aparece depois de adicionado.**
 Abra a página do feed e olhe a linha "Atualizado ..." no topo. Se houver um aviso em vermelho "falhas: ...", ele diz qual canal não foi encontrado. Causas comuns: handle digitado errado (confira na URL do canal no YouTube), ou um canal que tem o nome parecido mas é outro. Corrija o `channels.json` como na seção 2.
+
+**A linha "Atualizado ..." mostra "⚠︎ N canais sem resposta do YouTube nesta rodada".**
+O YouTube às vezes passa alguns minutos respondendo "404" para o RSS de todo mundo, inclusive para a máquina do GitHub. O script tem três caminhos por canal (RSS, RSS da playlist de uploads e a página pública do canal) e, se um canal falhar em todos, espera 2 minutos e tenta de novo. Só então aparece o aviso, e mesmo assim a página continua com o histórico. Na rodada seguinte (3 horas depois) quase sempre se resolve sozinho. Se quiser, force uma rodada como na seção 4. Se o aviso persistir por um dia inteiro para o mesmo canal, o canal pode ter mudado de endereço ou sido apagado: confira no YouTube e ajuste o `channels.json`.
 
 **A rodada ficou vermelha no Actions.**
 Clique na rodada, depois em `build`, e leia a linha que começa com `ERRO`. Quase sempre é um `channels.json` com erro de digitação: vírgula faltando ou sobrando, aspas abertas sem fechar, chave `{` ou colchete `]` a mais ou a menos. Você pode colar o conteúdo do arquivo em https://jsonlint.com para apontar a linha exata. Corrija e salve de novo; a correção dispara outra rodada.
