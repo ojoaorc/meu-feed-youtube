@@ -181,3 +181,7 @@ O que está público e o que não está:
 | `docs/` | Página gerada; não está no repositório (está no `.gitignore`), é produzida a cada rodada | Nunca |
 | `README.md` | Resumo técnico | Não |
 | `MANUAL.md` | Este manual | Quando quiser |
+
+### Uso no iPhone
+
+Os canais deslizam horizontalmente. Os períodos ficam visíveis; toque em **Ajustar feed** para Shorts, vistos e escolha do player. O cabeçalho acompanha a página sem encolher durante a rolagem. No player, **Fechar** fica no topo, e fechar ou usar Voltar restaura a posição da lista. Em paisagem, o painel permite rolagem interna. O login/Premium do player embutido continua dependendo das regras do navegador; **Abrir: no YouTube** permanece disponível.

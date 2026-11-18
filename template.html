@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Meu feed 🏴‍☠️</title>
 <meta name="robots" content="noindex">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src '__SCRIPT_HASH__'; style-src 'unsafe-inline'; img-src 'self' https://i.ytimg.com https://yt3.googleusercontent.com https://yt3.ggpht.com data:; frame-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
@@ -53,9 +53,6 @@
     .scroll::-webkit-scrollbar{display:none}
     .scroll .chip{flex:none}
   }
-  header.compact .top{padding:8px 0 6px}
-  header.compact .row.secondary{display:none}
-  header .row,header .top{transition:padding .18s}
   @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
   .row:last-child{padding-bottom:12px}
   .chip{border:0;border-radius:999px;padding:6px 12px;background:var(--chip);color:var(--chipfg);font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:transform .08s,background .15s}
@@ -165,6 +162,28 @@
   }
   @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 
+
+  .filter-panel{padding:2px 0 6px}
+  .filter-panel summary{cursor:pointer;width:fit-content;min-height:44px;display:list-item;padding:10px 6px;font-size:14px;font-weight:650;color:var(--fg);margin-left:16px}
+  .filter-options{padding:6px 0 12px}
+  .filter-options .sep{display:none}
+  .player-top{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--bg2);padding:8px 12px;border-bottom:1px solid var(--line)}
+  .player-top span{font-size:13px;color:var(--muted)}
+  .modal{overscroll-behavior:contain;padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+  .player{max-height:calc(100svh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overscroll-behavior:contain}
+  .player .frame{width:100%;max-height:62svh}
+  @media(max-width:760px),(max-height:500px),(hover:none) and (pointer:coarse){
+    header{position:relative;background:var(--bg);backdrop-filter:none;-webkit-backdrop-filter:none;transition:none}
+    body{background-attachment:scroll}
+    .wrap{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
+    .period-row,.filter-options{flex-wrap:wrap;overflow:visible}
+    .filter-options .chip{min-height:44px}
+    .player{max-height:calc(100svh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom))}
+  }
+  @media(orientation:landscape) and (max-height:500px){
+    .modal{align-items:flex-start}
+    .player .frame{max-height:calc(100svh - 100px)}
+  }
 </style>
 </head>
 <body>
@@ -182,17 +201,20 @@
       </button>
     </div>
     <div class="row scroll" id="channels"></div>
-    <div class="row scroll secondary">
+    <div class="row period-row">
       <button class="chip new-f" id="onlyNew" hidden>Novos <span class="n" id="newN"></span></button>
       <button class="chip on" data-range="14">2 semanas</button>
       <button class="chip" data-range="60">2 meses</button>
       <button class="chip" data-range="0">Tudo</button>
+    </div>
+    <details class="filter-panel"><summary>Ajustar feed</summary><div class="row filter-options">
       <button class="chip" id="toggleShorts">Shorts</button>
       <button class="chip" id="toggleApp" title="Onde abrir os vídeos">Abrir: aqui</button>
       <span class="sep"></span>
       <button class="chip" id="toggleSeen">Ocultar vistos</button>
       <button class="chip" id="markAll">Marcar tudo como visto</button>
     </div>
+    </details>
     <div class="row secondary"><div class="meta" id="meta"></div></div>
   </div>
 </header>
@@ -201,12 +223,12 @@
 
 <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="ptitle">
   <div class="player">
+    <div class="player-top"><span>A bordo · sessão de vídeo</span><button class="btn" id="pclose" aria-label="Fechar vídeo" title="Fechar (Esc)">Fechar</button></div>
     <div class="frame"><iframe title="Reprodutor do vídeo" id="frame" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
     <div class="pbar">
       <h2 id="ptitle"></h2>
-      <div class="nav"><button class="btn" id="pprev" title="Anterior (←)">←</button><button class="btn" id="pnext" title="Próximo (→)">→</button></div>
+      <div class="nav"><button class="btn" id="pprev" aria-label="Vídeo anterior" title="Anterior (←)">Anterior</button><button class="btn" id="pnext" aria-label="Próximo vídeo" title="Próximo (→)">Próximo</button></div>
       <a class="btn" id="popen" target="_blank" rel="noopener">YouTube ↗</a>
-      <button class="btn" id="pclose" aria-label="Fechar vídeo" title="Fechar (Esc)">✕</button>
       <div class="sub" id="psub"></div>
     </div>
   </div>
@@ -373,24 +395,23 @@
 
   // ---- player embutido (usa youtube.com, então vale o login/Premium do navegador)
   const modal = $('#modal'), frame = $('#frame');
-  let current = null, playlist = [], returnFocus = null;
+  let current = null, playlist = [], returnFocus = null, savedScroll = 0;
   function openPlayer(v, fromHistory){
-    if (!modal.classList.contains('open')) { returnFocus = document.activeElement; playlist = visible(); if (!fromHistory) history.pushState({player:1}, ''); }
+    if (!modal.classList.contains('open')) { returnFocus = document.activeElement; savedScroll = window.scrollY; playlist = visible(); if (!fromHistory) history.pushState({player:1}, ''); }
     current = v;
     frame.src = `player.html?v=${encodeURIComponent(v.id)}`;   // página intermediária (ver static/player.html)
     $('#ptitle').textContent = v.title; $('#popen').href = v.url;
     $('#psub').textContent = `${v.channel} · ${ago(v.published)}${views(v.views)}`;
     const i = playlist.findIndex(x => x.id === v.id);
     $('#pprev').disabled = i <= 0; $('#pnext').disabled = i < 0 || i >= playlist.length - 1;
-    modal.classList.add('open'); document.body.style.overflow = 'hidden';
+    modal.classList.add('open'); document.body.style.position = 'fixed'; document.body.style.top = `-${savedScroll}px`; document.body.style.width = '100%'; document.body.style.overflow = 'hidden'; document.querySelector('header').inert = true; document.querySelector('main').inert = true;
     markSeen(v); $('#pclose').focus({preventScroll:true});
   }
   function step(d){ const i = playlist.findIndex(x => x.id === current.id); const n = playlist[i + d]; if (n) openPlayer(n, true); }
   function closePlayer(fromHistory){
     if (!modal.classList.contains('open')) return;
-    modal.classList.remove('open'); frame.src = 'about:blank'; document.body.style.overflow = '';
+    modal.classList.remove('open'); frame.src = 'about:blank'; document.body.style.position = ''; document.body.style.top = ''; document.body.style.width = ''; document.body.style.overflow = ''; document.querySelector('header').inert = false; document.querySelector('main').inert = false; window.scrollTo({top:savedScroll, behavior:'instant'});
     if (!fromHistory && history.state && history.state.player) history.back();
-    const c = document.querySelector(`.card[data-id="${current.id}"]`); if (c) c.scrollIntoView({block:'nearest'});
     if (returnFocus && returnFocus.isConnected) returnFocus.focus({preventScroll:true});
   }
   addEventListener('popstate', () => closePlayer(true));
