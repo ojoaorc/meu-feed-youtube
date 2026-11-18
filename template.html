@@ -184,6 +184,8 @@
     .modal{align-items:flex-start}
     .player .frame{max-height:calc(100svh - 100px)}
   }
+  .back-top{position:fixed;right:max(14px,env(safe-area-inset-right));bottom:calc(16px + env(safe-area-inset-bottom));z-index:10;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:999px;background:var(--bg2);color:var(--muted);font-size:13px;font-weight:650;box-shadow:0 3px 12px rgba(0,0,0,.16);cursor:pointer}
+  .back-top:hover,.back-top:focus-visible{color:var(--fg);border-color:var(--accent2)}
 </style>
 </head>
 <body>
@@ -220,6 +222,8 @@
 </header>
 
 <main><div class="feed-intro"><div><span class="eyebrow">SEU PEQUENO PORTO</span><h1>Bom vento. Bons vídeos.</h1><p>Só os canais que você escolheu. Você no leme.</p></div><span class="pirate-stamp" aria-hidden="true">🏴‍☠️</span></div><p id="resultSummary" class="result-summary" role="status"></p><div class="grid" id="grid"></div><div style="text-align:center;margin-top:28px"><button class="btn" id="more" hidden>Mostrar mais</button></div></main>
+
+<button class="back-top" id="backTop" type="button" aria-label="Voltar ao topo e acessar os filtros" hidden><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 15 6-6 6 6"/></svg>Topo</button>
 
 <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="ptitle">
   <div class="player">
@@ -404,7 +408,7 @@
     $('#psub').textContent = `${v.channel} · ${ago(v.published)}${views(v.views)}`;
     const i = playlist.findIndex(x => x.id === v.id);
     $('#pprev').disabled = i <= 0; $('#pnext').disabled = i < 0 || i >= playlist.length - 1;
-    modal.classList.add('open'); document.body.style.position = 'fixed'; document.body.style.top = `-${savedScroll}px`; document.body.style.width = '100%'; document.body.style.overflow = 'hidden'; document.querySelector('header').inert = true; document.querySelector('main').inert = true;
+    modal.classList.add('open'); $('#backTop').hidden = true; document.body.style.position = 'fixed'; document.body.style.top = `-${savedScroll}px`; document.body.style.width = '100%'; document.body.style.overflow = 'hidden'; document.querySelector('header').inert = true; document.querySelector('main').inert = true;
     markSeen(v); $('#pclose').focus({preventScroll:true});
   }
   function step(d){ const i = playlist.findIndex(x => x.id === current.id); const n = playlist[i + d]; if (n) openPlayer(n, true); }
@@ -413,6 +417,7 @@
     modal.classList.remove('open'); frame.src = 'about:blank'; document.body.style.position = ''; document.body.style.top = ''; document.body.style.width = ''; document.body.style.overflow = ''; document.querySelector('header').inert = false; document.querySelector('main').inert = false; window.scrollTo({top:savedScroll, behavior:'instant'});
     if (!fromHistory && history.state && history.state.player) history.back();
     if (returnFocus && returnFocus.isConnected) returnFocus.focus({preventScroll:true});
+    syncBackTop();
   }
   addEventListener('popstate', () => closePlayer(true));
   $('#pclose').onclick = () => closePlayer();
@@ -427,6 +432,22 @@
     if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   });
+  // Controle flutuante independente do cabeçalho: não altera a altura da página.
+  const backTop = $('#backTop');
+  const mobileTop = matchMedia('(max-width:760px), (hover:none) and (pointer:coarse)');
+  const syncBackTop = () => { backTop.hidden = !mobileTop.matches || scrollY < 480 || modal.classList.contains('open'); };
+  let topTick = false;
+  addEventListener('scroll', () => {
+    if (topTick) return;
+    topTick = true; requestAnimationFrame(() => { syncBackTop(); topTick = false; });
+  }, {passive:true});
+  mobileTop.addEventListener('change', syncBackTop);
+  backTop.onclick = () => {
+    window.scrollTo({top:0, behavior:matchMedia('(prefers-reduced-motion:reduce)').matches ? 'instant' : 'smooth'});
+    const firstFilter = chBar.querySelector('button');
+    if (firstFilter) firstFilter.focus({preventScroll:true});
+  };
+  syncBackTop();
   renderChips(); render();
 })();
 </script>
