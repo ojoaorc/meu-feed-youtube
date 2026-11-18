@@ -123,6 +123,48 @@
   .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:999px;font-weight:600;font-size:13px;z-index:40;box-shadow:var(--shadow);opacity:0;transition:opacity .2s;pointer-events:none}
   .toast.show{opacity:1}
   @media (max-width:640px){.logo span{display:none}.search kbd{display:none}.grid{gap:16px 12px}main{padding:12px 12px 80px}.wrap{padding:0 12px}}
+
+  /* Mais espaço para assistir; movimento só quando ajuda. */
+  body{font-size:16px}
+  button,a,input{-webkit-tap-highlight-color:transparent}
+  :focus-visible{outline:3px solid var(--accent2);outline-offset:4px}
+  .chip,.btn,.icon{min-height:44px;font-size:14px}
+  .icon{width:44px;height:44px}
+  .search input{font-size:16px}
+  .search{min-height:44px}
+  .row{gap:6px}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr))}
+  .card{animation:none;transition:transform .18s,box-shadow .18s,border-color .18s}
+  .card.seen{opacity:.65}
+  .title{font-size:16px;line-height:1.45}
+  .actions{gap:8px;flex-wrap:wrap}
+  .actions button,.actions a{min-height:40px;display:inline-flex;align-items:center;font-size:13px}
+  .new,.short{z-index:1;pointer-events:none}
+  .feed-intro{display:flex;justify-content:space-between;align-items:center;padding:22px 0 18px;gap:20px}
+  .eyebrow{font-size:11px;letter-spacing:.16em;font-weight:800;color:var(--accent2)}
+  .feed-intro h1{font-size:clamp(24px,4vw,38px);letter-spacing:-.045em;line-height:1.12;margin:8px 0}
+  .feed-intro p{color:var(--muted);margin:0;font-size:14px}
+  .pirate-stamp{display:grid;place-items:center;width:66px;height:66px;flex:none;background:var(--card);border:1px dashed var(--accent2);border-radius:22px;transform:rotate(8deg);font-size:32px}
+  .result-summary{font-size:13px;color:var(--muted);margin:8px 0 20px}
+  .empty{padding:48px 16px;background:var(--card);border:1px dashed var(--line);border-radius:20px}
+  .empty p{font-size:14px}
+  .toast{max-width:calc(100vw - 32px);width:max-content;white-space:normal;text-align:center;bottom:calc(20px + env(safe-area-inset-bottom))}
+  :root[data-theme=light]{--accent2:#a62266;--yellow:#7a5100}
+  :root[data-theme=light] .meta b{color:#386016}
+  .modal{overflow-y:auto;padding:20px}
+  .player{max-height:calc(100dvh - 40px);overflow:auto}
+  .player .pbar h2{flex-basis:100%;white-space:normal;line-height:1.4}
+  @media(hover:none){.card:hover,.chip:hover{transform:none}.card:hover .thumb img{transform:none}}
+  @media(max-width:760px){
+    header{position:relative;padding-top:env(safe-area-inset-top)}
+    .top{gap:8px}.logo{gap:0}.logo img{width:34px;height:34px}
+    .row.scroll{mask-image:none;scroll-padding:12px}
+    .feed-intro{padding:18px 0 12px}.pirate-stamp{width:50px;height:50px;font-size:26px}
+    .modal{padding:12px;padding-top:max(12px,env(safe-area-inset-top));align-items:center}
+    .player{border-radius:16px;max-height:calc(100dvh - 40px)}
+  }
+  @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
 </style>
 </head>
 <body>
@@ -132,7 +174,7 @@
       <div class="logo"><img src="icon.svg" alt=""><span>Meu feed</span> <span class="count" id="count"></span></div>
       <label class="search">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-        <input id="q" type="search" placeholder="Procurar tesouro: título, canal ou descrição" autocomplete="off">
+        <input id="q" aria-label="Buscar vídeos" type="search" placeholder="Qual tesouro vamos ver?" autocomplete="off">
         <kbd>/</kbd>
       </label>
       <button class="icon" id="theme" title="Tema claro/escuro" aria-label="Tema">
@@ -155,23 +197,22 @@
   </div>
 </header>
 
-<main><div class="grid" id="grid"></div><div style="text-align:center;margin-top:28px"><button class="btn" id="more" hidden>Mostrar mais</button></div></main>
+<main><div class="feed-intro"><div><span class="eyebrow">SEU PEQUENO PORTO</span><h1>Bom vento. Bons vídeos.</h1><p>Só os canais que você escolheu. Você no leme.</p></div><span class="pirate-stamp" aria-hidden="true">🏴‍☠️</span></div><p id="resultSummary" class="result-summary" role="status"></p><div class="grid" id="grid"></div><div style="text-align:center;margin-top:28px"><button class="btn" id="more" hidden>Mostrar mais</button></div></main>
 
-<div class="modal" id="modal" role="dialog" aria-modal="true">
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="ptitle">
   <div class="player">
-    <div class="frame"><iframe id="frame" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+    <div class="frame"><iframe title="Reprodutor do vídeo" id="frame" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
     <div class="pbar">
       <h2 id="ptitle"></h2>
       <div class="nav"><button class="btn" id="pprev" title="Anterior (←)">←</button><button class="btn" id="pnext" title="Próximo (→)">→</button></div>
-      <button class="btn" id="pauto" title="Tocar o próximo ao fechar">Auto ▶</button>
       <a class="btn" id="popen" target="_blank" rel="noopener">YouTube ↗</a>
-      <button class="btn" id="pclose" title="Fechar (Esc)">✕</button>
+      <button class="btn" id="pclose" aria-label="Fechar vídeo" title="Fechar (Esc)">✕</button>
       <div class="sub" id="psub"></div>
     </div>
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status"></div>
 
 <script id="feed" type="application/json">__FEED_JSON__</script>
 <script>
@@ -190,7 +231,7 @@
   const allIds = feed.channels.map(c => c.channel_id).filter(Boolean);
   let active = new Set(get(LS.ch, allIds).filter(id => allIds.includes(id)));
   if (!active.size) active = new Set(allIds);
-  let rangeDays = get(LS.range, 14), query = '', showShorts = get(LS.shorts, false), limit = 120, onlyNew = false, autoNext = get(LS.auto, false);
+  let rangeDays = get(LS.range, 14), query = '', showShorts = get(LS.shorts, false), limit = 120, onlyNew = false;
   // No iPhone/iPad o WebKit bloqueia os cookies do YouTube dentro de players embutidos (sem login, sem Premium).
   // Lá, o padrão é abrir o vídeo no app do YouTube; o chip "Abrir" troca a qualquer hora.
   const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -206,7 +247,7 @@
   $('#theme').onclick = () => { theme = theme === 'dark' ? 'light' : 'dark'; set(LS.theme, theme); applyTheme(theme); };
 
   // ---- util
-  const fmtDate = iso => { const d = new Date(iso), diff = Math.floor((now - d) / 864e5);
+  const fmtDate = iso => { const d = new Date(iso), today = new Date(now); const diff = Math.round((new Date(today.getFullYear(),today.getMonth(),today.getDate()) - new Date(d.getFullYear(),d.getMonth(),d.getDate())) / 864e5);
     if (diff === 0) return 'Hoje'; if (diff === 1) return 'Ontem';
     return d.toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long'}); };
   const ago = iso => { const h = Math.round((now - new Date(iso)) / 36e5);
@@ -221,16 +262,22 @@
   // ---- chips de canal
   const chBar = $('#channels');
   function renderChips(){
+    const pos = chBar.scrollLeft;
     chBar.innerHTML = '';
+    const all = document.createElement('button');
+    all.className = 'chip' + (active.size === allIds.length ? ' on' : '');
+    all.textContent = 'Todos a bordo'; all.setAttribute('aria-pressed', active.size === allIds.length);
+    all.onclick = () => { active = new Set(allIds); set(LS.ch, [...active]); renderChips(); render(); };
+    chBar.appendChild(all);
     feed.channels.filter(c => c.channel_id).forEach(c => {
       const n = feed.videos.filter(v => v.channel_id === c.channel_id && (showShorts || !v.is_short) && (!rangeDays || now - new Date(v.published) < rangeDays*864e5)).length;
       const b = document.createElement('button'); b.className = 'chip' + (active.has(c.channel_id) ? ' on' : '');
       b.innerHTML = (c.avatar ? `<img src="${esc(c.avatar)}" alt="">` : '') + esc(c.name) + ` <span class="n">${n}</span>`;
-      b.title = 'Clique: liga/desliga · Duplo clique: só este';
-      b.onclick = () => { active.has(c.channel_id) ? active.delete(c.channel_id) : active.add(c.channel_id); if (!active.size) active = new Set(allIds); set(LS.ch, [...active]); renderChips(); render(); };
-      b.ondblclick = () => { active = new Set([c.channel_id]); set(LS.ch, [...active]); renderChips(); render(); };
+      b.title = 'Ver vídeos de ' + c.name; b.setAttribute('aria-pressed', active.has(c.channel_id));
+      b.onclick = () => { active = new Set([c.channel_id]); set(LS.ch, [...active]); renderChips(); render(); };
       chBar.appendChild(b);
     });
+    chBar.scrollLeft = pos;
   }
   document.querySelectorAll('[data-range]').forEach(b => {
     b.classList.toggle('on', +b.dataset.range === rangeDays);
@@ -241,9 +288,6 @@
   const syncNew = () => { const n = feed.videos.filter(v => isNewV(v) && (showShorts || !v.is_short)).length; newBtn.hidden = !n; $('#newN').textContent = n; newBtn.classList.toggle('on', onlyNew); };
   newBtn.onclick = () => { onlyNew = !onlyNew; syncNew(); render(); };
   syncNew();
-  // cabeçalho encolhe ao rolar para baixo, volta ao rolar para cima
-  let lastY = 0; const hdr = document.querySelector('header');
-  addEventListener('scroll', () => { const y = scrollY; if (y > 140 && y > lastY + 4) hdr.classList.add('compact'); else if (y < lastY - 4 || y < 80) hdr.classList.remove('compact'); lastY = y; }, {passive:true});
   const togS = $('#toggleShorts');
   const syncShorts = () => { togS.classList.toggle('on', showShorts); togS.textContent = showShorts ? 'Com Shorts' : 'Sem Shorts'; };
   togS.onclick = () => { showShorts = !showShorts; set(LS.shorts, showShorts); syncShorts(); renderChips(); render(); };
@@ -260,7 +304,7 @@
 
   // ---- busca
   const q = $('#q');
-  q.oninput = () => { query = norm(q.value.trim()); render(); };
+  let searchTimer; q.oninput = () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => { query = norm(q.value.trim()); render(); }, 100); };
   addEventListener('keydown', e => {
     if (e.key === '/' && document.activeElement !== q && !$('#modal').classList.contains('open')) { e.preventDefault(); q.focus(); }
     if (e.key === 'Escape') { if ($('#modal').classList.contains('open')) closePlayer(); else if (document.activeElement === q) { q.value=''; query=''; q.blur(); render(); } }
@@ -275,18 +319,26 @@
       && (!query || norm(v.title).includes(query) || norm(v.channel).includes(query) || norm(v.description).includes(query)));
   }
 
+  function resetFilters(){
+    active = new Set(allIds); rangeDays = 0; hideSeen = false; onlyNew = false; showShorts = true; query = ''; q.value = '';
+    set(LS.ch, [...active]); set(LS.range, 0); set(LS.hide, false); set(LS.shorts, true);
+    document.querySelectorAll('[data-range]').forEach(b => b.classList.toggle('on', +b.dataset.range === 0));
+    syncShorts(); syncNew(); renderChips(); render();
+  }
   function render(keepLimit){
-    syncTog();
+    syncTog(); syncNew();
+    document.querySelectorAll('.chip:not(#markAll)').forEach(b => b.setAttribute('aria-pressed', b.classList.contains('on')));
     if (!keepLimit) limit = 120;
     const all = visible(), vids = all.slice(0, limit);
     $('#more').hidden = all.length <= limit;
     $('#more').textContent = `Mostrar mais (${all.length - vids.length} restantes)`;
     const grid = $('#grid'); grid.innerHTML = '';
     $('#count').textContent = all.length;
+    $('#resultSummary').textContent = `${all.length} vídeo${all.length === 1 ? '' : 's'} a bordo` + (query ? ' · busca em todo o acervo' : ' · mais recentes primeiro');
     const gen = new Date(feed.generated_at).toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
     const newCount = feed.videos.filter(v => lastVisit && new Date(v.published) > lastVisit && !seen.has(v.id)).length;
     $('#meta').innerHTML = `Atualizado ${gen} · a cada 3 h` + (newCount ? ` · <b>${newCount} novo${newCount>1?'s':''} desde sua última visita</b>` : '') + (feed.errors.length ? ` · <span class="warn" title="${esc(feed.errors.join('\n'))}">⚠︎ ${feed.errors.length} canal${feed.errors.length>1?'is':''} sem resposta do YouTube nesta rodada (histórico mantido)</span>` : '');
-    if (!vids.length) { grid.innerHTML = `<div class="empty">${query ? 'Nenhum tesouro com “' + esc(q.value) + '” a bordo.' : 'Nada novo no horizonte, capitão. 🏴‍☠️'}</div>`; return; }
+    if (!vids.length) { grid.innerHTML = `<div class="empty">${query ? 'Nenhum tesouro com “' + esc(q.value) + '” a bordo.' : 'Nada novo no horizonte, capitão. 🏴‍☠️'}<p>Tente outro canal ou amplie os filtros.</p><button class="btn" id="resetFilters">Explorar todo o acervo</button></div>`; $('#resetFilters').onclick = resetFilters; return; }
     let day = '', i = 0;
     vids.forEach(v => {
       const d = fmtDate(v.published);
@@ -297,7 +349,7 @@
       card.style.setProperty('--i', Math.min(i++, 14)); card.dataset.id = v.id;
       card.innerHTML = `
         ${isNew ? '<span class="new">NOVO</span>' : ''}${v.is_short ? '<span class="short">SHORT</span>' : ''}
-        <button class="thumb" aria-label="Reproduzir"><img loading="lazy" src="${v.thumb}" alt=""><span class="play"><span></span></span></button>
+        <button class="thumb" aria-label="Reproduzir ${esc(v.title)}"><img loading="lazy" src="${v.thumb}" alt=""><span class="play"><span></span></span></button>
         <div class="body">
           <img src="${esc(avatarOf(v.channel_id))}" alt="">
           <div class="txt">
@@ -310,9 +362,6 @@
           </div>
         </div>`;
       card.querySelector('[data-act=seen]').onclick = () => { seen.has(v.id) ? seen.delete(v.id) : seen.add(v.id); set(LS.seen, [...seen]); syncNew(); render(true); };
-      // capa em alta resolução quando existir (a maxres do YouTube vem como 120x90 quando não existe)
-      const img = card.querySelector('.thumb img');
-      const hi = new Image(); hi.onload = () => { if (hi.naturalWidth > 320) img.src = hi.src; }; hi.src = `https://i.ytimg.com/vi/${v.id}/maxresdefault.jpg`;
       const open = () => openExt ? card.querySelector('a').click() : openPlayer(v);   // o <a> real preserva o toque do usuário (abre o app do YouTube no iPhone)
       card.querySelector('.thumb').onclick = open;
       card.querySelector('.title').onclick = open;
@@ -324,12 +373,9 @@
 
   // ---- player embutido (usa youtube.com, então vale o login/Premium do navegador)
   const modal = $('#modal'), frame = $('#frame');
-  let current = null, playlist = [];
-  const syncAuto = () => { $('#pauto').classList.toggle('on', autoNext); };
-  $('#pauto').onclick = () => { autoNext = !autoNext; set(LS.auto, autoNext); syncAuto(); toast(autoNext ? 'Ao fechar, toca o próximo' : 'Reprodução contínua desligada'); };
-  syncAuto();
+  let current = null, playlist = [], returnFocus = null;
   function openPlayer(v, fromHistory){
-    if (!modal.classList.contains('open')) { playlist = visible(); if (!fromHistory) history.pushState({player:1}, ''); }
+    if (!modal.classList.contains('open')) { returnFocus = document.activeElement; playlist = visible(); if (!fromHistory) history.pushState({player:1}, ''); }
     current = v;
     frame.src = `player.html?v=${encodeURIComponent(v.id)}`;   // página intermediária (ver static/player.html)
     $('#ptitle').textContent = v.title; $('#popen').href = v.url;
@@ -337,7 +383,7 @@
     const i = playlist.findIndex(x => x.id === v.id);
     $('#pprev').disabled = i <= 0; $('#pnext').disabled = i < 0 || i >= playlist.length - 1;
     modal.classList.add('open'); document.body.style.overflow = 'hidden';
-    markSeen(v);
+    markSeen(v); $('#pclose').focus({preventScroll:true});
   }
   function step(d){ const i = playlist.findIndex(x => x.id === current.id); const n = playlist[i + d]; if (n) openPlayer(n, true); }
   function closePlayer(fromHistory){
@@ -345,7 +391,7 @@
     modal.classList.remove('open'); frame.src = 'about:blank'; document.body.style.overflow = '';
     if (!fromHistory && history.state && history.state.player) history.back();
     const c = document.querySelector(`.card[data-id="${current.id}"]`); if (c) c.scrollIntoView({block:'nearest'});
-    if (autoNext) { const i = playlist.findIndex(x => x.id === current.id); const n = playlist[i + 1]; if (n) setTimeout(() => openPlayer(n), 150); }
+    if (returnFocus && returnFocus.isConnected) returnFocus.focus({preventScroll:true});
   }
   addEventListener('popstate', () => closePlayer(true));
   $('#pclose').onclick = () => closePlayer();
@@ -353,6 +399,13 @@
   modal.onclick = e => { if (e.target === modal) closePlayer(); };
   addEventListener('keydown', e => { if (!modal.classList.contains('open')) return; if (e.key === 'ArrowRight') step(1); if (e.key === 'ArrowLeft') step(-1); });
 
+  modal.addEventListener('keydown', e => {
+    if (e.key !== 'Tab') return;
+    const items = [...modal.querySelectorAll('iframe, button:not(:disabled), a[href]')];
+    const first = items[0], last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  });
   renderChips(); render();
 })();
 </script>

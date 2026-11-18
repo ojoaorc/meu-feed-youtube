@@ -31,11 +31,11 @@ O que fica no seu navegador, e não no GitHub: quais vídeos você marcou como v
 ## 1a. Atalhos da página
 
 - **Novos**: chip que aparece quando há vídeos publicados desde a sua última visita; clique para ver só eles.
-- Clique num canal para ligar/desligar; duplo clique mostra só ele. Tudo isso fica salvo no navegador, inclusive o período escolhido.
+- Clique num canal para ver só os vídeos dele; **Todos a bordo** reúne todos novamente. Tudo isso fica salvo no navegador, inclusive o período escolhido.
 - **Abrir: aqui / no YouTube**: escolhe se a capa e o título abrem o player embutido ou o app/site do YouTube (com seu login e Premium). No iPhone/iPad o padrão é "no YouTube", porque o player embutido roda deslogado lá (veja a seção 6).
-- **Player**: capa ou título abrem o vídeo na própria página. Setas ← → (ou os botões) passam para o anterior/próximo da lista visível. **Auto ▶** faz o próximo abrir sozinho quando você fecha. O botão Voltar do celular fecha o player.
+- **Player**: capa ou título abrem o vídeo na própria página. Setas ← → (ou os botões) passam para o anterior/próximo da lista visível. Fechar encerra a reprodução e devolve o foco ao vídeo. O botão Voltar do celular fecha o player.
 - Teclado: `/` foca a busca, `Esc` fecha o player ou limpa a busca.
-- Ao rolar a página para baixo, o cabeçalho encolhe; ao rolar para cima, volta.
+- No celular, os filtros rolam horizontalmente e o cabeçalho acompanha a página, liberando espaço para assistir.
 
 ## 1b. Instalar como aplicativo no celular
 
